@@ -28,15 +28,15 @@ public class RNPushNotificationHelper {
     }
 
     public Class getMainActivityClass() {
-      String packageName = mContext.getPackageName();
-      Intent launchIntent = mContext.getPackageManager().getLaunchIntentForPackage(packageName);
-      String className = launchIntent.getComponent().getClassName();
-      try {
-          return Class.forName(className);
-      } catch (ClassNotFoundException e) {
-          e.printStackTrace();
-          return null;
-      }
+        String packageName = mContext.getPackageName();
+        Intent launchIntent = mContext.getPackageManager().getLaunchIntentForPackage(packageName);
+        String className = launchIntent.getComponent().getClassName();
+        try {
+            return Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private AlarmManager getAlarmManager() {
@@ -133,22 +133,15 @@ public class RNPushNotificationHelper {
         if ( smallIcon != null ) {
             smallIconResId = res.getIdentifier(smallIcon, "mipmap", packageName);
         } else {
-            smallIconResId = res.getIdentifier("ic_notification", "mipmap", packageName);
+            notification.setContentText("<missing message content>");
         }
 
-        if ( smallIconResId == 0 ) {
-            smallIconResId = res.getIdentifier("ic_launcher", "mipmap", packageName);
-
-            if ( smallIconResId == 0 ) {
-                smallIconResId  = android.R.drawable.ic_dialog_info;
-            }
+        String msgcnt = bundle.getString("msgcnt");
+        if (msgcnt != null) {
+            notification.setNumber(Integer.parseInt(msgcnt));
         }
 
-        if ( largeIcon != null ) {
-            largeIconResId = res.getIdentifier(largeIcon, "mipmap", packageName);
-        } else {
-            largeIconResId = res.getIdentifier("ic_launcher", "mipmap", packageName);
-        }
+        int largeIconResId = res.getIdentifier("ic_launcher", "mipmap", packageName);
 
         Bitmap largeIconBitmap = BitmapFactory.decodeResource(res, largeIconResId);
 
@@ -182,9 +175,9 @@ public class RNPushNotificationHelper {
         }
 
         int notificationID;
-        String notificationIDString = bundle.getString("id");
+        String notificationIDString = bundle.getString("notId");
 
-        if ( notificationIDString != null ) {
+        if (notificationIDString != null) {
             notificationID = Integer.parseInt(notificationIDString);
         } else {
             notificationID = (int) System.currentTimeMillis();
@@ -198,12 +191,7 @@ public class RNPushNotificationHelper {
 
         notification.setContentIntent(pendingIntent);
 
-        Notification info = notification.build();
-        info.defaults |= Notification.DEFAULT_VIBRATE;
-        info.defaults |= Notification.DEFAULT_SOUND;
-        info.defaults |= Notification.DEFAULT_LIGHTS;
-
-        notificationManager.notify(notificationID, info);
+        notificationManager.notify(notificationID, notification.build());
     }
 
     public void cancelAll() {
