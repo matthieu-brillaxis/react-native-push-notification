@@ -179,7 +179,6 @@ Notifications._onNotification = function(data, isFromBackground = null) {
 					/* void */
 				}
 			}
-
 			this.onNotification(notificationData);
 		}
 	}
