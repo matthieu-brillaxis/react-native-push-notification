@@ -176,7 +176,7 @@ Notifications._onNotification = function(data, isFromBackground = null) {
 		} else {
 			this.onNotification({
 				foreground: ! isFromBackground,
-				message: {},
+				message: data.message || 'New social update',
 				data,
 			});
 		}
