@@ -10,8 +10,6 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.media.RingtoneManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
 
@@ -25,15 +23,15 @@ public class RNPushNotificationHelper {
     }
 
     public Class getMainActivityClass() {
-      String packageName = mContext.getPackageName();
-      Intent launchIntent = mContext.getPackageManager().getLaunchIntentForPackage(packageName);
-      String className = launchIntent.getComponent().getClassName();
-      try {
-          return Class.forName(className);
-      } catch (ClassNotFoundException e) {
-          e.printStackTrace();
-          return null;
-      }
+        String packageName = mContext.getPackageName();
+        Intent launchIntent = mContext.getPackageManager().getLaunchIntentForPackage(packageName);
+        String className = launchIntent.getComponent().getClassName();
+        try {
+            return Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public void sendNotification(Bundle bundle) {
@@ -47,52 +45,34 @@ public class RNPushNotificationHelper {
 
         NotificationCompat.Builder notification = new NotificationCompat.Builder(mContext)
                 .setContentTitle(bundle.getString("title"))
-                .setContentText(bundle.getString("message"))
-                .setTicker(bundle.getString("ticker"))
-                .setCategory(NotificationCompat.CATEGORY_CALL)
+                .setTicker(bundle.getString("title"))
+                .setDefaults(Notification.DEFAULT_ALL)
                 .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true);
 
-        String largeIcon = bundle.getString("largeIcon");
-
-        int smallIconResId;
-        int largeIconResId;
-
-        String smallIcon = bundle.getString("smallIcon");
-
-        if ( smallIcon != null ) {
-            smallIconResId = res.getIdentifier(smallIcon, "mipmap", packageName);
+        String message = bundle.getString("message");
+        if (message != null) {
+            notification.setContentText(message);
         } else {
-            smallIconResId = res.getIdentifier("ic_notification", "mipmap", packageName);
+            notification.setContentText("<missing message content>");
         }
 
-        if ( smallIconResId == 0 ) {
-            smallIconResId = res.getIdentifier("ic_launcher", "mipmap", packageName);
-
-            if ( smallIconResId == 0 ) {
-                smallIconResId  = android.R.drawable.ic_dialog_info;
-            }
+        String msgcnt = bundle.getString("msgcnt");
+        if (msgcnt != null) {
+            notification.setNumber(Integer.parseInt(msgcnt));
         }
 
-        if ( largeIcon != null ) {
-            largeIconResId = res.getIdentifier(largeIcon, "mipmap", packageName);
-        } else {
-            largeIconResId = res.getIdentifier("ic_launcher", "mipmap", packageName);
-        }
+        int largeIconResId = res.getIdentifier("ic_launcher", "mipmap", packageName);
 
         Bitmap largeIconBitmap = BitmapFactory.decodeResource(res, largeIconResId);
 
-        if ( largeIconResId != 0 && ( largeIcon != null || android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP ) ) {
-            notification.setLargeIcon(largeIconBitmap);
-        }
-
-        notification.setSmallIcon(smallIconResId);
+        notification.setLargeIcon(largeIconBitmap);
+        notification.setSmallIcon(android.R.drawable.ic_dialog_info); // Temporary
 
         int notificationID;
-        String notificationIDString = bundle.getString("id");
+        String notificationIDString = bundle.getString("notId");
 
-        if ( notificationIDString != null ) {
+        if (notificationIDString != null) {
             notificationID = Integer.parseInt(notificationIDString);
         } else {
             notificationID = (int) System.currentTimeMillis();
@@ -105,21 +85,12 @@ public class RNPushNotificationHelper {
         PendingIntent pendingIntent = PendingIntent.getActivity(mContext, notificationID, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
 
-        Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-
-        notification.setSound(defaultSoundUri);
-
         NotificationManager notificationManager =
                 (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
 
         notification.setContentIntent(pendingIntent);
 
-        Notification info = notification.build();
-        info.defaults |= Notification.DEFAULT_VIBRATE;
-        info.defaults |= Notification.DEFAULT_SOUND;
-        info.defaults |= Notification.DEFAULT_LIGHTS;
-
-        notificationManager.notify(notificationID, info);
+        notificationManager.notify(notificationID, notification.build());
     }
 
     public void cancelAll() {
