@@ -174,20 +174,11 @@ Notifications._onNotification = function(data, isFromBackground = null) {
 				sound: data.getSound()
 			});
 		} else {
-			var notificationData = {
+			this.onNotification({
 				foreground: ! isFromBackground,
-				...data
-			};
-
-			if ( typeof notificationData.data === 'string' ) {
-				try {
-					notificationData.data = JSON.parse(notificationData.data);
-				} catch(e) {
-					/* void */
-				}
-			}
-
-			this.onNotification(notificationData);
+				message: {},
+				data,
+			});
 		}
 	}
 };
