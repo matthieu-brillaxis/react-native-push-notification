@@ -54,7 +54,8 @@ public class RNPushNotificationHelper {
         if (message != null) {
             notification.setContentText(message);
         } else {
-            notification.setContentText("<missing message content>");
+            this.cancelAll();
+            return;
         }
 
         String msgcnt = bundle.getString("msgcnt");
