@@ -63,11 +63,16 @@ public class RNPushNotificationHelper {
         }
 
         int largeIconResId = res.getIdentifier("ic_launcher", "mipmap", packageName);
+        int smallIconResId = res.getIdentifier("ic_notification", "drawable", packageName);
+
+        if (smallIconResId == 0) {
+          smallIconResId = android.R.drawable.ic_dialog_info;
+        }
 
         Bitmap largeIconBitmap = BitmapFactory.decodeResource(res, largeIconResId);
 
         notification.setLargeIcon(largeIconBitmap);
-        notification.setSmallIcon(android.R.drawable.ic_dialog_info); // Temporary
+        notification.setSmallIcon(smallIconResId);
 
         int notificationID;
         String notificationIDString = bundle.getString("notId");
