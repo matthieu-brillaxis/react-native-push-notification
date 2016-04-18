@@ -43,12 +43,21 @@ public class RNPushNotificationHelper {
         Resources res = mApplication.getResources();
         String packageName = mApplication.getPackageName();
 
+        int msgcnt = Integer.parseInt(bundle.getString("msgcnt", "0"));
+
+        if (msgcnt == 0) {
+          this.cancelAll();
+          return;
+        }
+
+
         NotificationCompat.Builder notification = new NotificationCompat.Builder(mContext)
                 .setContentTitle(bundle.getString("title"))
                 .setTicker(bundle.getString("title"))
                 .setDefaults(Notification.DEFAULT_ALL)
                 .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
-                .setAutoCancel(true);
+                .setAutoCancel(true)
+                .setNumber(msgcnt);
 
         String message = bundle.getString("message");
         if (message != null) {
@@ -56,11 +65,6 @@ public class RNPushNotificationHelper {
         } else {
             this.cancelAll();
             return;
-        }
-
-        String msgcnt = bundle.getString("msgcnt");
-        if (msgcnt != null) {
-            notification.setNumber(Integer.parseInt(msgcnt));
         }
 
         int largeIconResId = res.getIdentifier("ic_launcher", "mipmap", packageName);
