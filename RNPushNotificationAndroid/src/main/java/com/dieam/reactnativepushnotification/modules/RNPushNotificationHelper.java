@@ -2,16 +2,18 @@ package com.dieam.reactnativepushnotification.modules;
 
 
 import android.app.Application;
-import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
+
+import org.json.JSONObject;
 
 public class RNPushNotificationHelper {
     private Application mApplication;
@@ -50,14 +52,15 @@ public class RNPushNotificationHelper {
           return;
         }
 
-
         NotificationCompat.Builder notification = new NotificationCompat.Builder(mContext)
                 .setContentTitle(bundle.getString("title"))
                 .setTicker(bundle.getString("title"))
-                .setDefaults(Notification.DEFAULT_ALL)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
                 .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
                 .setAutoCancel(true)
-                .setNumber(msgcnt);
+                .setNumber(msgcnt)
+                .setColor(Color.parseColor("#009DDC"))
+                .setGroupSummary(true);
 
         String message = bundle.getString("message");
         if (message != null) {
@@ -79,33 +82,43 @@ public class RNPushNotificationHelper {
         notification.setLargeIcon(largeIconBitmap);
         notification.setSmallIcon(smallIconResId);
 
-        int notificationID;
-        String notificationIDString = bundle.getString("notId");
+        String notificationID = null;
+        String groupID = null;
+        try {
+            String digestString = bundle.getString("digest");
+            if (digestString == null) {
+                throw new RuntimeException("No digest");
+            }
+            JSONObject digest = new JSONObject(bundle.getString("digest"));
+            notificationID = digest.getString("notified_id");
 
-        if (notificationIDString != null) {
-            notificationID = Integer.parseInt(notificationIDString);
-        } else {
-            notificationID = (int) System.currentTimeMillis();
+            groupID = digest.getString("workspace");
+        } catch (Exception e) {
+            if (notificationID == null) {
+                notificationID = String.valueOf(System.currentTimeMillis());
+            }
+        }
+
+        if (groupID != null) {
+            notification.setGroup(groupID);
         }
 
         Intent intent = new Intent(mContext, intentClass);
         intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         intent.putExtra("notification", bundle);
 
-        PendingIntent pendingIntent = PendingIntent.getActivity(mContext, notificationID, intent,
+        PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
 
-        NotificationManager notificationManager =
-                (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(mContext);
 
         notification.setContentIntent(pendingIntent);
 
-        notificationManager.notify(notificationID, notification.build());
+        notificationManager.notify(notificationID, 0, notification.build());
     }
 
     public void cancelAll() {
-        NotificationManager notificationManager =
-                (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(mContext);
 
         notificationManager.cancelAll();
     }
