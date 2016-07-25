@@ -165,7 +165,7 @@ Notifications._onNotification = function(data, isFromBackground = null) {
 	if ( this.onNotification !== false ) {
 		if ( Platform.OS === 'ios' ) {
 			this.onNotification({
-				foreground: ! isFromBackground,
+				foreground: !isFromBackground,
 				userInteraction: isFromBackground,
 				message: data.getMessage(),
 				data: data.getData(),
@@ -174,20 +174,11 @@ Notifications._onNotification = function(data, isFromBackground = null) {
 				sound: data.getSound()
 			});
 		} else {
-			var notificationData = {
-				foreground: ! isFromBackground,
-				...data
-			};
-
-			if ( typeof notificationData.data === 'string' ) {
-				try {
-					notificationData.data = JSON.parse(notificationData.data);
-				} catch(e) {
-					/* void */
-				}
-			}
-
-			this.onNotification(notificationData);
+			this.onNotification({
+				foreground: !isFromBackground,
+				userInteraction: data.userInteraction,
+				data
+			});
 		}
 	}
 };

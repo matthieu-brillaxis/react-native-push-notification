@@ -1,7 +1,10 @@
 package com.dieam.reactnativepushnotification.modules;
 
 
-import android.app.*;
+import android.app.AlarmManager;
+import android.app.Application;
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
@@ -14,6 +17,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 
 public class RNPushNotificationHelper {
@@ -27,15 +31,15 @@ public class RNPushNotificationHelper {
     }
 
     public Class getMainActivityClass() {
-      String packageName = mContext.getPackageName();
-      Intent launchIntent = mContext.getPackageManager().getLaunchIntentForPackage(packageName);
-      String className = launchIntent.getComponent().getClassName();
-      try {
-          return Class.forName(className);
-      } catch (ClassNotFoundException e) {
-          e.printStackTrace();
-          return null;
-      }
+        String packageName = mContext.getPackageName();
+        Intent launchIntent = mContext.getPackageManager().getLaunchIntentForPackage(packageName);
+        String className = launchIntent.getComponent().getClassName();
+        try {
+            return Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private AlarmManager getAlarmManager() {
@@ -46,7 +50,7 @@ public class RNPushNotificationHelper {
         int notificationID;
         String notificationIDString = bundle.getString("id");
 
-        if ( notificationIDString != null ) {
+        if (notificationIDString != null) {
             notificationID = Integer.parseInt(notificationIDString);
         } else {
             notificationID = (int) System.currentTimeMillis();
@@ -90,6 +94,14 @@ public class RNPushNotificationHelper {
             }
 
             if (bundle.getString("message") == null) {
+                this.cancelAll();
+                return;
+            }
+
+            int msgcnt = Integer.parseInt(bundle.getString("msgcnt", "0"));
+
+            if (msgcnt == 0) {
+                this.cancelAll();
                 return;
             }
 
@@ -107,7 +119,10 @@ public class RNPushNotificationHelper {
                     .setTicker(bundle.getString("ticker"))
                     .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
-                    .setAutoCancel(bundle.getBoolean("autoCancel", true));
+                    .setDefaults(NotificationCompat.DEFAULT_ALL)
+                    .setColor(Color.parseColor("#009DDC"))
+                    .setAutoCancel(bundle.getBoolean("autoCancel", true))
+                    .setNumber(msgcnt);
 
             String group = bundle.getString("group");
             if (group != null) {
@@ -120,7 +135,7 @@ public class RNPushNotificationHelper {
 
             String subText = bundle.getString("subText");
 
-            if ( subText != null ) {
+            if (subText != null) {
                 notification.setSubText(subText);
             }
 
@@ -140,21 +155,21 @@ public class RNPushNotificationHelper {
 
             String smallIcon = bundle.getString("smallIcon");
 
-            if ( smallIcon != null ) {
+            if (smallIcon != null) {
                 smallIconResId = res.getIdentifier(smallIcon, "mipmap", packageName);
             } else {
                 smallIconResId = res.getIdentifier("ic_notification", "mipmap", packageName);
             }
 
-            if ( smallIconResId == 0 ) {
+            if (smallIconResId == 0) {
                 smallIconResId = res.getIdentifier("ic_launcher", "mipmap", packageName);
 
-                if ( smallIconResId == 0 ) {
-                    smallIconResId  = android.R.drawable.ic_dialog_info;
+                if (smallIconResId == 0) {
+                    smallIconResId = android.R.drawable.ic_dialog_info;
                 }
             }
 
-            if ( largeIcon != null ) {
+            if (largeIcon != null) {
                 largeIconResId = res.getIdentifier(largeIcon, "mipmap", packageName);
             } else {
                 largeIconResId = res.getIdentifier("ic_launcher", "mipmap", packageName);
@@ -162,14 +177,14 @@ public class RNPushNotificationHelper {
 
             Bitmap largeIconBitmap = BitmapFactory.decodeResource(res, largeIconResId);
 
-            if ( largeIconResId != 0 && ( largeIcon != null || android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP ) ) {
+            if (largeIconResId != 0 && (largeIcon != null || android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP)) {
                 notification.setLargeIcon(largeIconBitmap);
             }
 
             notification.setSmallIcon(smallIconResId);
             String bigText = bundle.getString("bigText");
 
-            if (bigText == null ) {
+            if (bigText == null) {
                 bigText = bundle.getString("message");
             }
 
@@ -185,7 +200,7 @@ public class RNPushNotificationHelper {
                 notification.setSound(defaultSoundUri);
             }
 
-            if ( android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ) {
+            if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 notification.setCategory(NotificationCompat.CATEGORY_CALL);
 
                 String color = bundle.getString("color");
@@ -194,16 +209,17 @@ public class RNPushNotificationHelper {
                 }
             }
 
+            String tag = null;
+
             int notificationID = (int) System.currentTimeMillis();
             if (bundle.containsKey("id")) {
                 String notificationIDString = bundle.getString("id");
                 if (notificationIDString != null) {
-                    Log.w(TAG, "'id' field set as a string instead of an int");
 
                     try {
                         notificationID = Integer.parseInt(notificationIDString);
                     } catch (NumberFormatException e) {
-                        Log.w(TAG, "'id' field could not be converted to an int, ignoring it", e);
+                        tag = notificationIDString;
                     }
                 } else {
                     notificationID = (int) bundle.getDouble("id");
@@ -213,8 +229,7 @@ public class RNPushNotificationHelper {
             PendingIntent pendingIntent = PendingIntent.getActivity(mContext, notificationID, intent,
                     PendingIntent.FLAG_UPDATE_CURRENT);
 
-            NotificationManager notificationManager =
-                    (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
+            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(mContext);
 
             notification.setContentIntent(pendingIntent);
 
@@ -226,10 +241,12 @@ public class RNPushNotificationHelper {
             }
 
             Notification info = notification.build();
-            info.defaults |= Notification.DEFAULT_LIGHTS;
 
-            if (bundle.containsKey("tag")) {
-                String tag = bundle.getString("tag");
+            if (tag == null && bundle.containsKey("tag")) {
+                tag = bundle.getString("tag");
+            }
+
+            if (tag != null) {
                 notificationManager.notify(tag, notificationID, info);
             } else {
                 notificationManager.notify(notificationID, info);
@@ -240,8 +257,7 @@ public class RNPushNotificationHelper {
     }
 
     public void cancelAll() {
-        NotificationManager notificationManager =
-                (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(mContext);
 
         notificationManager.cancelAll();
 
