@@ -10,6 +10,7 @@ var _notifHandlers = new Map();
 
 var DEVICE_NOTIF_EVENT = 'remoteNotificationReceived';
 var NOTIF_REGISTER_EVENT = 'remoteNotificationsRegistered';
+var REMOTE_FETCH_EVENT = 'remoteFetch';
 
 var NotificationsComponent = function() {
 
@@ -29,6 +30,10 @@ NotificationsComponent.prototype.requestPermissions = function(senderID: string)
 	RNPushNotification.requestPermissions(senderID);
 };
 
+NotificationsComponent.prototype.cancelLocalNotifications = function(details: Object) {
+	RNPushNotification.cancelLocalNotifications(details);
+};
+
 NotificationsComponent.prototype.cancelAllLocalNotifications = function() {
 	RNPushNotification.cancelAllLocalNotifications();
 };
@@ -39,6 +44,13 @@ NotificationsComponent.prototype.presentLocalNotification = function(details: Ob
 
 NotificationsComponent.prototype.scheduleLocalNotification = function(details: Object) {
 	RNPushNotification.scheduleLocalNotification(details);
+};
+
+NotificationsComponent.prototype.setApplicationIconBadgeNumber = function(number: number) {
+       if (!RNPushNotification.setApplicationIconBadgeNumber) {
+               return;
+       }
+       RNPushNotification.setApplicationIconBadgeNumber(number);
 };
 
 NotificationsComponent.prototype.abandonPermissions = function() {
@@ -66,6 +78,14 @@ NotificationsComponent.prototype.addEventListener = function(type: string, handl
 				handler(registrationInfo.deviceToken);
 			}
 		);
+	} else if (type === 'remoteFetch') {
+		listener = DeviceEventEmitter.addListener(
+			REMOTE_FETCH_EVENT,
+			function(notifData) {
+				var notificationData = JSON.parse(notifData.dataJSON)
+				handler(notificationData);
+			}
+		);
 	}
 
 	_notifHandlers.set(handler, listener);
@@ -78,6 +98,14 @@ NotificationsComponent.prototype.removeEventListener = function(type: string, ha
 	}
 	listener.remove();
 	_notifHandlers.delete(handler);
+}
+
+NotificationsComponent.prototype.registerNotificationActions = function(details: Object) {
+	RNPushNotification.registerNotificationActions(details);
+}
+
+NotificationsComponent.prototype.clearAllNotifications = function() {
+	RNPushNotification.clearAllNotifications()
 }
 
 module.exports = {
